@@ -39,7 +39,7 @@ const asteriskToRx = (value: any): any => {
 }
 
 const defineMatchers = ({ queries, response, ...def }: Definition) => Object.assign(def, {
-  response: isString(response) && isHex(response) ? Buffer.from(response, 'hex').toString() : response,
+  response: isString(response) && isHex(response) ? Buffer.from(response, 'hex') : response,
   path: bind(pathMatcher, def.path, queries),
   body: asteriskToRx(def.body)
 })
@@ -53,11 +53,17 @@ const readRecord = (recordPath: string) =>
 const recordsByScope = (scopeName: string) =>
   fs.readdirSync(scopeName)
     .map(join(scopeName))
+    .filter(path => {
+        return !~path.toLowerCase().indexOf('.ds_store');
+    })
     .map(readRecord)
     .map(defineMatchers)
 
 export default (playbacksPath: string) =>
   fs.readdirSync(playbacksPath)
     .map(join(playbacksPath))
+    .filter(path => {
+        return fs.statSync(path).isDirectory();
+    })
     .map(recordsByScope)
     .map(definePersistent)
